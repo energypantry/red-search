@@ -34,6 +34,13 @@
 
 ### Added（续）
 
+- `xhs filters <关键词>` / `client.filter_options()`：拉取服务端**动态下发**的筛选面板定义
+  （6 组：排序依据/笔记类型/发布时间/搜索范围/位置距离/热门词），改版后无需再逆向。
+- 实测确认：**排序语义客观成立**——`popularity_descending` 的 `liked_count` 严格递减（0 逆序对）、
+  `comment_descending` 的 `comment_count` 递减、`collect_descending` 的 `collected_count` 递减。
+- 实测确认：**评论列表与作者作品列表没有排序参数**（7 种参数名组合全部被静默忽略），
+  只有搜索结果可排序。
+
 - `xhs verify [--quick]`：运行时自检，覆盖签名连通、5 个 sort 枚举、`type`/`time`/`scope`/`location` 筛选、
   组合筛选、feed/comments/sub_comments/user/user_posted、错误处理。改版后据此定位坏点。
 - 搜索筛选全部实测通过（此前 `--scope` / `--location` 标注为未验证）。

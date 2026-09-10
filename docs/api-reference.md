@@ -225,6 +225,46 @@ c.comments(note_id, xsec_token, cursor="")
 | `GET` | `/api/sns/web/v2/user/me` | web用户-个人信息V2 |
 | `GET` | `/api/sns/web/v2/user_posted` | 【web】- user_posted v2 |
 
+### `GET /api/sns/web/v1/search/filter` — 筛选面板定义（服务端动态下发）
+
+```python
+c.filter_options("咖啡")
+# -> {"sort_type": {"name":"排序依据","tags":["general","time_descending",...]},
+#     "filter_note_time": {"name":"发布时间","tags":["不限","一天内","一周内","半年内"]}, ...}
+```
+
+参数：`keyword` + `search_id`（缺 `search_id` 会返回 400）。
+用它可以在小红书改版后**直接看到当前有哪些筛选**，不必再逆向。
+
+CLI：`xhs filters "咖啡"`
+
+**当前面板全部 6 组**：
+
+| group id | 名称 | 取值 |
+|---|---|---|
+| `sort_type` | 排序依据 | `general` 综合 / `time_descending` 最新 / `popularity_descending` 最多点赞 / `comment_descending` 最多评论 / `collect_descending` 最多收藏 |
+| `filter_note_type` | 笔记类型 | 不限 / 视频笔记 / 普通笔记 |
+| `filter_note_time` | 发布时间 | 不限 / 一天内 / 一周内 / 半年内 |
+| `filter_note_range` | 搜索范围 | 不限 / 已看过 / 未看过 / 已关注 |
+| `filter_pos_distance` | 位置距离 | 不限 / 同城 / 附近 |
+| `filter_hot` | 热门词 | 服务端按地区动态下发的城市词 |
+
+> 「排序依据」是 `sort_type` 这一组，对应请求体的 **`sort` 字段**（不是 `filters`）；
+> 其余五组对应 `filters` 数组。`xhs` 已把两者都封装成 `--sort` 和 `--time/--type/--scope/--location`。
+
+**排序语义已客观验证**（2026-09-10）：`popularity_descending` 返回的 `liked_count` 严格递减（0 逆序对）、
+`comment_descending` 的 `comment_count` 递减、`collect_descending` 的 `collected_count` 递减。
+
+### 评论列表 / 作者作品列表：**没有排序参数**
+
+实测把 `sort` / `sort_type` / `order` / `order_type` 等 7 种参数名组合分别喂给
+`/api/sns/web/v2/comment/page` 和 `/api/sns/web/v1/user_posted`，返回结果与不传**完全一致**（被静默忽略）。
+
+- 评论列表：服务端返回综合排序（既非按赞降序也非按时间降序），客户端无法改序。
+- 作者作品列表：返回顺序固定（非按赞、非按时间），也无排序参数。
+
+> 只有**搜索结果**有排序能力。要「某作者的爆款作品」只能自己全量拉回来再本地排序。
+
 ## 3. 其它值得注意的端点
 
 | 端点 | 说明 |

@@ -22,6 +22,7 @@ xhs_scraper.client — 小红书 Web API 客户端（纯算签名，风险缓解
 CLI（推荐用 bin/xhs，见项目 README）:
     python3 -m xhs_scraper.cli search "咖啡" 20
     python3 -m xhs_scraper.cli suggest "咖啡"           # 搜索联想词
+    python3 -m xhs_scraper.cli filters "咖啡"           # 当前可用的筛选项（服务端下发）
     python3 -m xhs_scraper.cli feed <note_id> <xsec_token>
     python3 -m xhs_scraper.cli comments <note_id> <xsec_token>
     python3 -m xhs_scraper.cli user <user_id>
@@ -302,6 +303,25 @@ class XhsClient:
         self._after(r)
         return r
 
+    # ---------- 筛选面板定义 ----------
+    def search_filters(self, keyword):
+        """拉取服务端**动态下发**的搜索筛选项（排序依据/笔记类型/发布时间/搜索范围/位置距离/热门词）。
+
+        用途：确认当前有哪些筛选可选（小红书改版后不用再逆向）。返回值可直接喂给 filters 参数。
+        """
+        return self.get("/api/sns/web/v1/search/filter",
+                        {"keyword": keyword, "search_id": self.client.get_search_id()})
+
+    def filter_options(self, keyword):
+        """便捷：把筛选面板整理成 {group_id: {"name":..., "tags":[...]}} 。"""
+        try:
+            groups = (self.search_filters(keyword).json().get("data") or {}).get("filters") or []
+        except Exception:
+            return {}
+        return {g.get("id"): {"name": g.get("name"),
+                              "tags": [t.get("id") for t in (g.get("filter_tags") or [])]}
+                for g in groups}
+
     # ---------- 搜索联想词 ----------
     def suggest(self, keyword):
         """搜索下拉联想词。原始响应中 `data.sug_items[].text` 为建议词。"""
@@ -437,6 +457,10 @@ def main():
     elif cmd == "comments":
         print(json.dumps(c.comments(sys.argv[2], sys.argv[3]).json(),
                          ensure_ascii=False, indent=2)[:3000])
+    elif cmd == "filters":
+        kw = sys.argv[2] if len(sys.argv) > 2 else "咖啡"
+        opts = c.filter_options(kw)
+        print(json.dumps(opts, ensure_ascii=False, indent=1))
     elif cmd == "suggest":
         kw = sys.argv[2] if len(sys.argv) > 2 else "咖啡"
         words = c.suggestions(kw)

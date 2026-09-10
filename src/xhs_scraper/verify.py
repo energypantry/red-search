@@ -88,6 +88,15 @@ class Verifier:
         nid, tok = first["id"], first["xsec_token"]
         self.check("item 级 xsec_token", len(tok) >= 40, f"len={len(tok)}")
 
+        print("①b 筛选面板定义（服务端下发）")
+        opts = c.filter_options(KW)
+        self.check("filter_options() 拉到面板", bool(opts.get("sort_type", {}).get("tags")),
+                   f"组数={len(opts)}")
+        self.check("面板含全部 6 组",
+                   {"sort_type", "filter_note_type", "filter_note_time",
+                    "filter_note_range", "filter_pos_distance", "filter_hot"} <= set(opts),
+                   f"{sorted(opts)}")
+
         print("② sort 枚举（必须 5 个各不相同）")
         means = {}
         for s in SORTS:

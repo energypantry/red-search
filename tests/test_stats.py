@@ -67,3 +67,39 @@ def test_verifier_overlap():
     assert Verifier.overlap([], []) == 0.0
     assert Verifier.overlap(["a", "b"], ["a", "b"]) == 1.0
     assert Verifier.overlap(["a", "b"], ["a", "c"]) == 0.5
+
+
+# ---------- 筛选面板解析（离线，mock 掉网络）----------
+
+def test_filter_options_parsing():
+    """filter_options() 要把服务端下发的面板结构整理成 {group_id: {name, tags}}。"""
+    from xhs_scraper import XhsClient
+
+    class FakeResp:
+        @staticmethod
+        def json():
+            return {"success": True, "data": {"filters": [
+                {"id": "sort_type", "name": "排序依据",
+                 "filter_tags": [{"id": "general"}, {"id": "popularity_descending"}]},
+                {"id": "filter_note_time", "name": "发布时间",
+                 "filter_tags": [{"id": "不限"}, {"id": "一周内"}]},
+            ]}}
+
+    c = XhsClient.__new__(XhsClient)
+    c.search_filters = lambda kw: FakeResp()
+    got = c.filter_options("咖啡")
+    assert got["sort_type"]["name"] == "排序依据"
+    assert got["sort_type"]["tags"] == ["general", "popularity_descending"]
+    assert got["filter_note_time"]["tags"] == ["不限", "一周内"]
+
+
+def test_filter_options_survives_error():
+    from xhs_scraper import XhsClient
+
+    class Boom:
+        @staticmethod
+        def json():
+            raise ValueError("bad")
+    c = XhsClient.__new__(XhsClient)
+    c.search_filters = lambda kw: Boom()
+    assert c.filter_options("咖啡") == {}
