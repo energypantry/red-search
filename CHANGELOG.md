@@ -1,0 +1,37 @@
+# Changelog
+
+本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [0.1.0] - 2026-09-10
+
+首次作为独立项目发布（此前散落在个人 agent 工作区的 `xhs-sign/` 目录里）。
+
+### Added
+
+- `XhsClient`：纯算签名客户端（基于 `xhshow`），覆盖 search / feed / comments / sub_comments / user / user_posted
+- 批量采集器 `xhs_scraper.collect`：`search` / `enrich` / `comments` / `authors` / `run` 四段流水线，
+  JSONL 追加安全 + 断点续采
+- 统一 CLI `bin/xhs`（自动建 venv、转发子命令、`doctor` 自检）
+- `tools/get_xhs_cookies.js`：从 Agent Browser Runtime 的已登录 Chrome 经 CDP 提取 cookies
+- `tools/capture_fingerprint.js`：抓取真机设备指纹（`x8`/`x9`/`ua`）并落盘 pin
+- 文档：`docs/architecture.md`（签名链逆向）、`docs/risk-control.md`（封控概率判断）、
+  `docs/api-reference.md`（98 端点 + 参数契约）、`docs/troubleshooting.md`、
+  `docs/recon-2026-09-10.md`（原始侦察证据）
+- 离线测试 `tests/`
+
+### Security / Risk
+
+- **修复**：`xhshow` 原生在每个请求里随机重建整套设备指纹（实测同一 cookies 连续三次
+  `x8` 哈希 `dc8418b1` / `f9079a03` / `89ba5abf` 全不同），等价于"同账号每秒换一台新电脑"。
+  现改为固定指纹：真机 pin 优先，否则持久化合成指纹（跨进程复用）。
+- **修复**：合成指纹自称 Windows Edge，而请求头是 macOS Chrome，形成自相矛盾。
+  现 `User-Agent` 跟随指纹模式自动同步。
+- 新增网络层 3 次重试（`ConnectionResetError` / `SSLError` 是常态）。
+- 新增熔断：连续异常指数退避（2→4→8…上限 120s），5 次抛 `XhsBlockedError`。
+
+### Known limitations
+
+- 未模拟页面加载前置序列（`config` → `user/me` → …），属弱信号，见 risk-control §2 R3
+- 只覆盖 Web 端；移动端 App 协议（`shield` / `x-sign`）未涉及
+- 签名算法随目标站发版可能失效，需跟随升级 `xhshow`

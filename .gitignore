@@ -1,0 +1,36 @@
+# ---- 凭据 / 会话状态（绝不入库）----
+cookies.json
+*.cookies.json
+device_fingerprint.json
+synthetic_fingerprint.json
+.env
+.env.*
+*.key
+*.pem
+
+# ---- 采集产物 ----
+out/
+output/
+xhs-out/
+*.jsonl
+!examples/*.sample.jsonl
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# ---- Node ----
+node_modules/
+npm-debug.log*
+
+# ---- macOS ----
+.DS_Store
+._*

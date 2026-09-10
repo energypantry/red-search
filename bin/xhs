@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# xhs — xhs-scraper 统一入口
+#
+# 首次调用会自动建 venv 并安装依赖（xhshow + requests）。
+# 也可手动:  python3 -m venv ~/.local/share/xhs-venv && ~/.local/share/xhs-venv/bin/pip install -e .
+set -euo pipefail
+
+# 解析符号链接（macOS 的 readlink 不支持 -f）
+SELF="${BASH_SOURCE[0]}"
+while [ -L "$SELF" ]; do
+  _d="$(cd "$(dirname "$SELF")" && pwd)"
+  SELF="$(readlink "$SELF")"
+  case "$SELF" in /*) ;; *) SELF="$_d/$SELF" ;; esac
+done
+PROJECT_DIR="$(cd "$(dirname "$SELF")/.." && pwd)"
+VENV="${XHS_VENV:-$HOME/.local/share/xhs-venv}"
+STATE="${XHS_STATE_DIR:-$HOME/.local/share/xhs}"
+PY="$VENV/bin/python"
+mkdir -p "$STATE" 2>/dev/null || true
+chmod 700 "$STATE" 2>/dev/null || true
+
+export PYTHONPATH="$PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+
+bootstrap() {
+  echo "[xhs] 首次运行，初始化 venv: $VENV" >&2
+  local base=""
+  for cand in /opt/homebrew/bin/python3 /usr/local/bin/python3 python3; do
+    command -v "$cand" >/dev/null 2>&1 && { base="$cand"; break; }
+  done
+  [ -n "$base" ] || { echo "[xhs] 找不到 python3" >&2; exit 1; }
+  "$base" -m venv "$VENV"
+  "$PY" -m pip install --quiet --disable-pip-version-check --upgrade pip >/dev/null 2>&1 || true
+  "$PY" -m pip install --quiet --disable-pip-version-check xhshow requests
+  # JS 侧依赖（取 cookie / 抓指纹用）
+  if command -v npm >/dev/null 2>&1 && [ ! -d "$PROJECT_DIR/node_modules/ws" ]; then
+    (cd "$PROJECT_DIR" && npm install --silent --no-audit --no-fund >/dev/null 2>&1) || true
+  fi
+  echo "[xhs] 初始化完成" >&2
+}
+
+[ -x "$PY" ] || bootstrap
+"$PY" -c "import xhshow, requests" 2>/dev/null || bootstrap
+
+ensure_page() {
+  if curl -s --max-time 5 "http://127.0.0.1:19223/json/list" 2>/dev/null | grep -q 'xiaohongshu.com'; then
+    return 0
+  fi
+  local BRS_DIR="$HOME/Desktop/Projects/agent-browser-runtime"
+  [ -d "$BRS_DIR" ] || { echo "[xhs] 无小红书页面且找不到 browser runtime" >&2; return 1; }
+  echo "[xhs] 打开小红书页面…" >&2
+  (cd "$BRS_DIR" && node cli/brs.js browse-start "https://www.xiaohongshu.com/explore" \
+      --agent xhs-tool --task xhs-tool >/dev/null 2>&1) || true
+  sleep 8
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  cookies)
+    out="${1:-$STATE/cookies.json}"
+    ensure_page || exit 1
+    exec node "$PROJECT_DIR/tools/get_xhs_cookies.js" "$out"
+    ;;
+  fp|fingerprint)
+    out="${1:-$STATE/device_fingerprint.json}"
+    ensure_page || exit 1
+    exec node "$PROJECT_DIR/tools/capture_fingerprint.js" "$out"
+    ;;
+  doctor)
+    echo "project   : $PROJECT_DIR"
+    echo "venv      : $VENV"
+    "$PY" -c "import xhshow,requests,sys;print('python    :',sys.version.split()[0]);print('xhshow    :',xhshow.__name__)"
+    echo "state     : $STATE"
+    echo "指纹模式  : $("$PY" -c "from xhs_scraper import resolve_fingerprint;m,ua=resolve_fingerprint();print(m,'|',ua[:58])" 2>/dev/null || echo '解析失败')"
+    [ -f "$STATE/device_fingerprint.json" ] && echo "            （真机指纹已 pin；切合成: XHS_FP_MODE=synthetic xhs ...）"
+    [ -f "$STATE/synthetic_fingerprint.json" ] && echo "            （已有持久化合成指纹）"
+    if [ -f "$STATE/cookies.json" ]; then
+      echo "cookies   : 已就绪 ($STATE/cookies.json)"
+    else
+      echo "cookies   : 缺失 —— 先跑: xhs cookies"
+    fi
+    [ -d "$PROJECT_DIR/node_modules/ws" ] && echo "node deps : 已安装" || echo "node deps : 缺失（xhs cookies/fp 需要；跑 npm i）"
+    ;;
+  ""|-h|--help)
+    sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
+    echo
+    "$PY" -m xhs_scraper.cli --help
+    ;;
+  *)
+    exec "$PY" -m xhs_scraper.cli "$cmd" "$@"
+    ;;
+esac

@@ -1,0 +1,10 @@
+{
+  "name": "xhs-scraper-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node side-tools for xhs-scraper (cookie extraction, device fingerprint capture)",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}
