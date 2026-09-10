@@ -11,13 +11,18 @@ xhs_scraper.client — 小红书 Web API 客户端（纯算签名，风险缓解
   4. 熔断 + 重试 —— 连续异常指数退避，5 次熔断；网络层 3 次重试。
 
 用法（库）:
-    from xhs_scraper import XhsClient, XhsBlockedError
+    from xhs_scraper import XhsClient, XhsBlockedError, build_filters
     c = XhsClient()
-    items = c.search("咖啡").json()["data"]["items"]
+    items = c.search("咖啡", sort="likes",
+                     filters=build_filters(time="week", note_type="video")).json()["data"]["items"]
     nid, tok = items[0]["id"], items[0]["xsec_token"]   # token 在 item 级
     note  = c.feed(nid, tok).json()
     cmts  = c.comments(nid, tok).json()
     who   = c.user(note["data"]["items"][0]["note_card"]["user"]["user_id"]).json()
+
+用法（CLI）:
+    xhs search "青岛 房东直租" 40 --time week --sort latest
+    xhs search --help          # 全部筛选参数
 
 CLI（推荐用 bin/xhs，见项目 README）:
     python3 -m xhs_scraper.cli search "咖啡" 20
@@ -428,6 +433,82 @@ class XhsClient:
             cursor = d.get("cursor") or ""
 
 
+# ---------- CLI: search 参数解析 ----------
+SEARCH_USAGE = """用法:
+  xhs search <关键词> [条数] [选项]
+
+选项（取值写错会被服务端**静默忽略**，所以这里做本地校验）:
+  --sort      general|latest|likes|comments|collects   综合/最新/最多点赞/最多评论/最多收藏
+  --time      day|week|half_year                       一天内/一周内/半年内
+  --type      video|image                              视频笔记/普通笔记
+  --scope     seen|unseen|followed                     已看过/未看过/已关注
+  --location  city|nearby                              同城/附近
+  --hot       <城市词>                                  热门词，如 青岛
+
+取值写 any / 不限 / 全部 表示不加该筛选。
+
+示例:
+  xhs search "青岛 房东直租" 40 --time week --sort latest
+  xhs search "咖啡" 60 --type video --time half_year
+  xhs search "露营" --time day --location city
+"""
+
+# flag -> (取值说明, 允许值映射表或 None 表示自由取值)
+SEARCH_FLAGS = {
+    "--sort":     ("综合/最新/最多点赞/最多评论/最多收藏", SORT_MAP),
+    "--time":     ("一天内/一周内/半年内", TIME_MAP),
+    "--type":     ("视频笔记/普通笔记", TYPE_MAP),
+    "--scope":    ("已看过/未看过/已关注", SCOPE_MAP),
+    "--location": ("同城/附近", LOCATION_MAP),
+    "--hot":      ("热门词（城市名）", None),
+}
+ANY_VALUES = {"any", "none", "", "不限", "全部"}
+
+
+def parse_search_args(args):
+    """把 `关键词 [条数] --time week ...` 拆成 (关键词, 条数, 筛选字典)。
+
+    取值不在允许集合时**直接报错**而不是静默传给服务端——服务端对非法 tag
+    会当没传，导致"看着成功但筛选根本没生效"。
+    """
+    kw, n, opts = None, None, {}
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-h", "--help"):
+            print(SEARCH_USAGE, end="")
+            raise SystemExit(0)
+        if a in SEARCH_FLAGS:
+            if i + 1 >= len(args):
+                raise SystemExit(f"{a} 需要一个取值\n\n{SEARCH_USAGE}")
+            key, val = a[2:], args[i + 1]
+            if val not in ANY_VALUES:
+                allowed = SEARCH_FLAGS[a][1]
+                if allowed is not None and val not in allowed:
+                    raise SystemExit(
+                        f"{a} 取值非法: {val!r}\n"
+                        f"  允许: {' | '.join(allowed)}（或 any/不限）\n"
+                        f"  说明: {SEARCH_FLAGS[a][0]}")
+                opts[key] = val
+            i += 2
+        elif a.startswith("--"):
+            raise SystemExit(f"未知参数 {a}\n\n{SEARCH_USAGE}")
+        elif kw is None:
+            kw = a
+            i += 1
+        elif n is None and a.isdigit():
+            n = int(a)
+            i += 1
+        else:
+            raise SystemExit(f"多余参数 {a!r}\n\n{SEARCH_USAGE}")
+    if not kw:
+        raise SystemExit(SEARCH_USAGE)
+    n = 20 if n is None else n
+    if n <= 0:
+        raise SystemExit("条数必须为正整数")
+    return kw, n, opts
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -435,18 +516,32 @@ def main():
     c = XhsClient(verbose=True)
     cmd = sys.argv[1]
     if cmd == "search":
-        kw = sys.argv[2] if len(sys.argv) > 2 else "咖啡"
-        n = int(sys.argv[3]) if len(sys.argv) > 3 else 20
-        j = c.search(kw, page_size=n).json()
-        items = (j.get("data") or {}).get("items") or []
-        print(f"success={j.get('success')} items={len(items)}")
-        for it in items:
-            nc = it.get("note_card") or {}
-            if not nc:
-                continue
+        kw, n, o = parse_search_args(sys.argv[2:])
+        filters = build_filters(time=o.get("time"), note_type=o.get("type"),
+                                scope=o.get("scope"), location=o.get("location"),
+                                hot=o.get("hot"))
+        sort = o.get("sort", "general")
+        max_pages = max(1, -(-n // 20))     # 服务端 page_size 固定 20
+        shown = []
+        for _page, items in c.search_pages(kw, max_pages=max_pages, sort=sort, filters=filters):
+            for it in items:
+                nc = it.get("note_card") or {}
+                if not nc:
+                    continue
+                shown.append((it, nc))
+                if len(shown) >= n:
+                    break
+            if len(shown) >= n:
+                break
+        eff = " ".join(f"{k}={v}" for k, v in o.items())
+        print(f"keyword={kw!r} 条数={len(shown)} sort={sort}" + (f"  [{eff}]" if eff else ""))
+        for it, nc in shown:
+            u = (nc.get("user") or {}).get("nickname") or ""
             print(f"  {it['id']}  tok={it.get('xsec_token','')[:16]}…  "
-                  f"{str(nc.get('display_title'))[:40]}  "
-                  f"likes={((nc.get('interact_info') or {}).get('liked_count'))}")
+                  f"{str(nc.get('display_title'))[:40]:42} "
+                  f"likes={str((nc.get('interact_info') or {}).get('liked_count')):>6}  @{u}")
+        if not shown:
+            print("  （无结果）")
     elif cmd == "feed":
         nc = ((c.feed(sys.argv[2], sys.argv[3]).json().get("data") or {}).get("items")
               or [{}])[0].get("note_card") or {}

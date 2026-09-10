@@ -7,7 +7,7 @@ import sys
 
 USAGE = """xhs-scraper 命令：
 
-  search <关键词> [N]            搜索笔记
+  search <关键词> [N] [选项]      搜索笔记（N=条数，默认20；筛选见 xhs search --help）
   suggest <关键词>              搜索联想词（下拉推荐）
   filters <关键词>              当前可用的筛选项（服务端动态下发）
   feed <note_id> <xsec_token>    笔记详情
@@ -17,6 +17,10 @@ USAGE = """xhs-scraper 命令：
   collect <子命令> ...           批量采集（suggest/search/enrich/comments/authors/run）
   stats <notes.jsonl|目录>       量化统计（均赞/中位/最高/近90天占比/Top5）
   verify [--quick]              运行时自检：签名/端点/筛选是否仍可用（会发真实请求）
+
+搜索筛选：--sort general|latest|likes|comments|collects
+          --time day|week|half_year  --type video|image
+          --scope seen|unseen|followed  --location city|nearby  --hot <城市词>
 
 环境变量：XHS_FP_MODE=auto|real|synthetic，XHS_COOKIE_FILE，XHS_STATE_DIR
 """

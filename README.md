@@ -51,6 +51,8 @@ xhs fp                 # 抓真机设备指纹并 pin（强烈建议）
 # 2) 查询
 xhs suggest "咖啡"      # 联想词
 xhs search "咖啡" 20
+xhs search "青岛 房东直租" 40 --time week --sort latest   # 搜索①支持筛选（条数=总数，自动翻页）
+xhs search --help                                        # 全部筛选参数
 xhs user <user_id>
 xhs usernotes <user_id> 30
 
@@ -59,6 +61,7 @@ xhs collect run --keyword 咖啡 --keyword 手冲 --pages 3 \
     --max-notes 50 --comments --authors --author-notes --out ./out
 
 # 时间窗分层（关键：全部档会被老爆款拉高，一周档才反映新帖真实水位）
+xhs search "咖啡" 60 --sort likes --time week          # 单次查询
 xhs collect search --keyword 咖啡 --pages 3 --sort likes --time week --out ./out-week
 xhs stats ./out-week
 ```

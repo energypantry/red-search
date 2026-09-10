@@ -97,6 +97,21 @@ class Verifier:
                     "filter_note_range", "filter_pos_distance", "filter_hot"} <= set(opts),
                    f"{sorted(opts)}")
 
+        print("①c 包导出面 + CLI 参数校验（离线）")
+        try:
+            from . import build_filters as _bf, SORT_MAP as _sm   # noqa: F401
+            from .client import parse_search_args as _psa
+            self.check("包根可导入 build_filters/SORT_MAP", True, "")
+            bad_rejected = False
+            try:
+                _psa(["kw", "--sort", "hot"])
+            except SystemExit:
+                bad_rejected = True
+            self.check("非法 --sort 被本地拒绝", bad_rejected,
+                       "服务端会静默忽略，必须本地拦")
+        except Exception as e:
+            self.check("包导出面", False, f"{type(e).__name__}: {e}")
+
         print("② sort 枚举（必须 5 个各不相同）")
         means = {}
         for s in SORTS:

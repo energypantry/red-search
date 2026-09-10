@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xhs-scraper"
-version = "0.1.0"
+version = "0.1.1"
 description = "小红书 Web API 采集工具（纯算签名，无需浏览器在线）"
 readme = "README.md"
 requires-python = ">=3.10"
