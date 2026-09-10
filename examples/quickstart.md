@@ -100,6 +100,31 @@ $ xhs collect run \
 
 **断点续采**：重跑同一条命令即可，已采过的 id 自动跳过。
 
+## 2.5 时间窗分层（关键词调研必做）
+
+不同时间窗的均赞差异极大，只看「全部」会被历史爆款误导：
+
+```bash
+$ xhs collect search --keyword 咖啡 --pages 2 --sort likes            --out ./all
+$ xhs collect search --keyword 咖啡 --pages 2 --sort likes --time week --out ./week
+$ xhs collect search --keyword 咖啡 --pages 2 --sort likes --time half_year --out ./half
+
+$ for d in all week half; do echo "== $d"; xhs stats ./$d | head -4; done
+== all
+命中数      : 36
+均赞        : 7123.3
+中位赞      : 4055.0
+== week
+命中数      : 37
+均赞        : 517.6      ← 新帖能拿到的真实水位
+中位赞      : 243
+== half
+命中数      : 40
+均赞        : 4129.2
+```
+
+判读：**一周档的均赞/中位赞 = 新内容的预期流量**；全部档与一周档落差大 = 老词靠历史爆款撑着，新帖不友好。
+
 ## 3. 当库用
 
 ```python

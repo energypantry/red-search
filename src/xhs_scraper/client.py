@@ -57,6 +57,37 @@ REFERER = {
     "Content-Type": "application/json;charset=UTF-8",
 }
 
+# 筛选映射（取值来自服务端 GET /api/sns/web/v1/search/filter）
+SORT_MAP = {
+    "general": "general",
+    "latest": "time_descending",
+    "likes": "popularity_descending",
+    "comments": "comment_descending",
+    "collects": "collect_descending",
+}
+TIME_MAP = {"day": "一天内", "week": "一周内", "half_year": "半年内", "halfYear": "半年内"}
+TYPE_MAP = {"video": "视频笔记", "image": "普通笔记"}
+SCOPE_MAP = {"seen": "已看过", "unseen": "未看过", "followed": "已关注"}
+LOCATION_MAP = {"city": "同城", "nearby": "附近"}
+
+
+def build_filters(time=None, note_type=None, scope=None, location=None, hot=None):
+    """拼 search 接口的 filters 数组。传友好值，内部映射成服务端 tag。"""
+    pairs = [
+        ("filter_note_time", time, TIME_MAP),
+        ("filter_note_type", note_type, TYPE_MAP),
+        ("filter_note_range", scope, SCOPE_MAP),
+        ("filter_pos_distance", location, LOCATION_MAP),
+    ]
+    out = []
+    for fid, val, m in pairs:
+        if val and val in m:
+            out.append({"type": fid, "tags": [m[val]]})
+    if hot:
+        out.append({"type": "filter_hot", "tags": [hot]})
+    return out
+
+
 # 自定义 base64 字母表（小红书 X-s / X-S-Common 使用）
 CUSTOM_B64 = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
 STD_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -310,14 +341,17 @@ class XhsClient:
             cursor = d.get("cursor") or ""
 
     # ---------- 已实测端点 ----------
-    def search(self, keyword, page=1, page_size=20, sort="general"):
+    def search(self, keyword, page=1, page_size=20, sort="general", filters=None):
         # 实测：page_size 必须为 20，其他值服务端返回 0 条
         if page_size != 20:
             page_size = 20
+        # 实测：sort 必须用服务端枚举（likes/latest 等友好名会被静默忽略！）
+        sort = SORT_MAP.get(sort, sort)
         return self.post("/api/sns/web/v1/search/notes", {
             "keyword": keyword, "page": page, "page_size": page_size,
             "search_id": self.client.get_search_id(), "sort": sort, "note_type": 0,
-            "ext_flags": [], "image_formats": ["jpg", "webp", "avif"],
+            "ext_flags": [], "filters": filters or [],
+            "image_formats": ["jpg", "webp", "avif"],
             "need_filter_image": False,
         })
 
@@ -342,10 +376,10 @@ class XhsClient:
         })
 
     # ---------- 分页 ----------
-    def search_pages(self, keyword, max_pages=1, page_size=20, sort="general"):
+    def search_pages(self, keyword, max_pages=1, page_size=20, sort="general", filters=None):
         """逐页产出 (page, items)；子项含 id / xsec_token / note_card。"""
         for page in range(1, max_pages + 1):
-            r = self.search(keyword, page=page, page_size=page_size, sort=sort)
+            r = self.search(keyword, page=page, page_size=page_size, sort=sort, filters=filters)
             try:
                 data = r.json().get("data") or {}
             except Exception:

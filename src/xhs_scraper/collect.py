@@ -8,6 +8,11 @@ xhs_collect.py — 小红书批量采集器（纯算签名，无需浏览器在�
   # 搜关键词，只要列表
   python3 xhs_collect.py search --keyword 咖啡 --keyword 手冲 --pages 2 --out ./out
 
+  # 时间窗分层（关键：一周档才反映新帖真实水位）
+  python3 xhs_collect.py search --keyword 咖啡 --pages 3 --sort likes --out ./out          # 全部档
+  python3 xhs_collect.py search --keyword 咖啡 --pages 3 --sort likes --time week --out ./out-week
+  python3 xhs_collect.py search --keyword 咖啡 --pages 3 --sort likes --time half_year --out ./out-half
+
   # 全链路：搜索 + 详情 + 评论 + 作者主页
   python3 xhs_collect.py run --keyword 咖啡 --pages 3 --max-notes 50 \
       --comments --authors --author-notes --out ./out --throttle 2.5
@@ -33,7 +38,7 @@ import time
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from .client import XhsClient, XhsBlockedError  # noqa: E402
+from .client import XhsClient, XhsBlockedError, build_filters  # noqa: E402
 
 
 # ---------------- 工具 ----------------
@@ -142,12 +147,14 @@ def comment_record(note_id, c, parent_id=None):
 
 
 # ---------------- 采集段 ----------------
-def do_search(c, keywords, pages, page_size, sort, out_dir, quiet=False):
+def do_search(c, keywords, pages, page_size, sort, out_dir, quiet=False, filters=None):
     path = os.path.join(out_dir, "notes.jsonl")
     have = seen_note_ids(path)
     added = 0
+    label = f" | filters={len(filters)}" if filters else ""
     for kw in keywords:
-        for page, items in c.search_pages(kw, max_pages=pages, page_size=page_size, sort=sort):
+        for page, items in c.search_pages(kw, max_pages=pages, page_size=page_size,
+                                          sort=sort, filters=filters):
             for it in items:
                 nid = it.get("id")
                 if not nid or nid in have:
@@ -157,7 +164,7 @@ def do_search(c, keywords, pages, page_size, sort, out_dir, quiet=False):
                 append_jsonl(path, note_record(kw, it))
                 have.add(nid)
                 added += 1
-            log(f"search '{kw}' p{page}: +{len(items)} 条 (累计新增 {added})", quiet)
+            log(f"search '{kw}' p{page}: +{len(items)} 条 (累计新增 {added}){label}", quiet)
     log(f"搜索段完成，新增 {added} 条 -> {path}", quiet)
     return added
 
@@ -427,6 +434,14 @@ def build_parser():
         sp.add_argument("--jitter", type=float, default=1.0, help="额外随机抖动上限秒（默认 1.0）")
         sp.add_argument("--cookie-file", default=None, help="cookies JSON 路径")
         sp.add_argument("--min-likes", type=int, default=None, help="仅处理点赞数 >= N 的笔记")
+        sp.add_argument("--time", default=None,
+                        choices=["day", "week", "half_year"], help="发布时间筛选")
+        sp.add_argument("--type", dest="note_type", default=None,
+                        choices=["video", "image"], help="笔记类型筛选")
+        sp.add_argument("--scope", default=None,
+                        choices=["seen", "unseen", "followed"], help="搜索范围筛选")
+        sp.add_argument("--location", default=None,
+                        choices=["city", "nearby"], help="位置距离筛选")
         sp.add_argument("--quiet", action="store_true")
 
     sp = sub.add_parser("search", help="搜索关键词，写 notes.jsonl")
@@ -474,6 +489,13 @@ def build_parser():
     return p
 
 
+def _filters(args):
+    return build_filters(time=getattr(args, "time", None),
+                         note_type=getattr(args, "note_type", None),
+                         scope=getattr(args, "scope", None),
+                         location=getattr(args, "location", None))
+
+
 def main(argv=None):
     args = build_parser().parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
@@ -484,7 +506,8 @@ def main(argv=None):
         f" | 节流 {args.throttle}s + 抖动 {args.jitter}s", args.quiet)
     try:
         if args.cmd == "search":
-            do_search(c, args.keyword, args.pages, args.page_size, args.sort, args.out, args.quiet)
+            do_search(c, args.keyword, args.pages, args.page_size, args.sort, args.out,
+                      args.quiet, _filters(args))
         elif args.cmd == "enrich":
             do_enrich(c, args.out, limit=args.limit, quiet=args.quiet, min_likes=args.min_likes)
         elif args.cmd == "comments":
@@ -497,7 +520,8 @@ def main(argv=None):
         elif args.cmd == "suggest":
             do_suggest(c, args.keyword, args.out, args.quiet)
         elif args.cmd == "run":
-            do_search(c, args.keyword, args.pages, args.page_size, args.sort, args.out, args.quiet)
+            do_search(c, args.keyword, args.pages, args.page_size, args.sort, args.out,
+                      args.quiet, _filters(args))
             do_enrich(c, args.out, limit=args.max_notes, quiet=args.quiet, min_likes=args.min_likes)
             if args.comments:
                 do_comments(c, args.out, limit=args.comment_notes,

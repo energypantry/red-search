@@ -19,9 +19,25 @@ c.search(keyword, page=1, page_size=20, sort="general")
 | `page` | ✅ | 从 1 开始 |
 | `page_size` | ✅ | **必须为 20**，其他值服务端返回 0 条 |
 | `search_id` | ✅ | base36，由 `Xhshow.get_search_id()` 生成 |
-| `sort` | | `general` / `latest` / `likes` / `comments` / `collects` |
+| `sort` | | **必须用服务端枚举**：`general` / `time_descending` / `popularity_descending` / `comment_descending` / `collect_descending`。传 `likes`/`latest` 等友好名会被**静默忽略**（退化成综合），`XhsClient` 已做映射 |
+| `filters` | | 数组，形如 `[{"type":"filter_note_time","tags":["一周内"]}]` |
 | `note_type` | | `0` 不限 |
 | `ext_flags` / `image_formats` / `need_filter_image` | | 固定值，见实现 |
+
+**可选筛选**（`type` → 可选 `tags`，由 `GET /api/sns/web/v1/search/filter` 下发）：
+
+| filter type | tags |
+|---|---|
+| `filter_note_time` | `一天内` / `一周内` / `半年内` |
+| `filter_note_type` | `视频笔记` / `普通笔记` |
+| `filter_note_range` | `已看过` / `未看过` / `已关注` |
+| `filter_pos_distance` | `同城` / `附近` |
+| `filter_hot` | 各城市热搜词（服务端动态下发） |
+
+便捷构造：`build_filters(time="week", note_type="image", scope="unseen", location="city")`
+
+> **实测差异**（关键词"咖啡"各采 2 页）：全部档均赞 7123 ｜ 半年档 4129 ｜ **一周档 517.6（中位 243）** ｜ 最新排序均赞 3.0。
+> 这正是"必须按时间窗分档测"的原因——全部档的数字由历史爆款撑起，新帖拿不到。
 
 返回：`data.items[]`，每项含 `id`(note_id)、**`xsec_token`（item 级，46 字符）**、`note_card`。
 搜索结果里混有直播/AI 占位条目，需过滤（`note_id` 必须是 24 位 hex 且 `note_card` 非空）。

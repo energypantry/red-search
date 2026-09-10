@@ -108,3 +108,32 @@ def test_note_record_parses_counts():
     assert rec["liked_count"] == 123          # 字符串计数要转 int
     assert rec["user_id"] == "u1"
     assert rec["detail"] is False
+
+
+# ---------- 搜索参数契约（sort 枚举 / filters）----------
+
+def test_sort_friendly_names_map_to_server_enums():
+    """友好名必须映射成服务端枚举；传 likes 这类无效值会被服务端静默忽略。"""
+    from xhs_scraper.client import SORT_MAP
+    assert SORT_MAP["likes"] == "popularity_descending"
+    assert SORT_MAP["latest"] == "time_descending"
+    assert SORT_MAP["comments"] == "comment_descending"
+    assert SORT_MAP["collects"] == "collect_descending"
+    assert SORT_MAP["general"] == "general"
+
+
+def test_build_filters_maps_friendly_values():
+    from xhs_scraper.client import build_filters
+    f = build_filters(time="week", note_type="image", scope="unseen", location="city")
+    got = {x["type"]: x["tags"][0] for x in f}
+    assert got["filter_note_time"] == "一周内"
+    assert got["filter_note_type"] == "普通笔记"
+    assert got["filter_note_range"] == "未看过"
+    assert got["filter_pos_distance"] == "同城"
+    assert len(f) == 4
+
+
+def test_build_filters_empty_when_nothing_given():
+    from xhs_scraper.client import build_filters
+    assert build_filters() == []
+    assert build_filters(time=None, scope=None) == []

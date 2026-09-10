@@ -13,7 +13,7 @@
 | 能力 | 命令 | 产物 |
 |---|---|---|
 | 搜索联想词（下拉推荐） | `xhs suggest` / `xhs collect suggest` | `suggestions.jsonl` |
-| 关键词搜索 | `xhs search` / `xhs collect search` | `notes.jsonl` |
+| 关键词搜索（含排序/时间窗/类型/范围/位置筛选） | `xhs search` / `xhs collect search` | `notes.jsonl` |
 | 量化统计（均赞/中位/最高/近90天占比/Top5） | `xhs stats <out目录>` | 终端输出 |
 | 笔记详情（正文/图片/标签/互动数） | `xhs feed` / `xhs collect enrich` | 回写 `notes.jsonl` |
 | 一/二级评论 | `xhs comments` / `xhs collect comments` | `comments.jsonl` |
@@ -56,7 +56,16 @@ xhs usernotes <user_id> 30
 # 3) 批量
 xhs collect run --keyword 咖啡 --keyword 手冲 --pages 3 \
     --max-notes 50 --comments --authors --author-notes --out ./out
+
+# 时间窗分层（关键：全部档会被老爆款拉高，一周档才反映新帖真实水位）
+xhs collect search --keyword 咖啡 --pages 3 --sort likes --time week --out ./out-week
+xhs stats ./out-week
 ```
+
+`--sort` 取值：`general` | `latest` | `likes` | `comments` | `collects`
+（内部映射为服务端枚举 `time_descending` / `popularity_descending` / …；**直接传 `likes` 给 API 会被静默忽略**，本工具已处理）
+
+`--time` `day|week|half_year` ｜ `--type` `video|image` ｜ `--scope` `seen|unseen|followed` ｜ `--location` `city|nearby`
 
 Python 里当库用：
 
