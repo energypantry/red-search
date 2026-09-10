@@ -15,6 +15,7 @@
 | 搜索联想词（下拉推荐） | `xhs suggest` / `xhs collect suggest` | `suggestions.jsonl` |
 | 关键词搜索（含排序/时间窗/类型/范围/位置筛选） | `xhs search` / `xhs collect search` | `notes.jsonl` |
 | 量化统计（均赞/中位/最高/近90天占比/Top5） | `xhs stats <out目录>` | 终端输出 |
+| 运行时自检（小红书改版后定位坏在哪一环） | `xhs verify [--quick]` | 终端输出 |
 | 笔记详情（正文/图片/标签/互动数） | `xhs feed` / `xhs collect enrich` | 回写 `notes.jsonl` |
 | 一/二级评论 | `xhs comments` / `xhs collect comments` | `comments.jsonl` |
 | 作者主页（简介/小红书号/粉丝/获赞/标签/IP属地） | `xhs user` | — |
@@ -97,6 +98,17 @@ profile = c.user(note["data"]["items"][0]["note_card"]["user"]["user_id"]).json(
 | `auto` | 有真机用真机，否则用持久化合成 | 默认 |
 
 > **批量采集勿用主号。** 风控惩罚落在账号上。完整的风险分析见 [docs/risk-control.md](docs/risk-control.md)。
+
+## 自检
+
+小红书改动签名或筛选后，跑一遍就知道坏在哪一环（会发起真实请求）：
+
+```bash
+xhs verify --quick     # ≈22 次请求
+xhs verify             # ≈46 次请求，含发布时间窗口的客观抽查
+```
+
+覆盖：签名连通 → 5 个 sort 枚举互不相同 → `type` 筛选（断言返回类型）→ `time` 筛选（抽查发布时间是否真在窗口内）→ `scope`/`location` 筛选（对比结果集重叠率）→ 组合筛选 → feed/comments/sub_comments/user/user_posted → 错误处理。
 
 ## 项目结构
 

@@ -32,6 +32,12 @@
 - 新增网络层 3 次重试（`ConnectionResetError` / `SSLError` 是常态）。
 - 新增熔断：连续异常指数退避（2→4→8…上限 120s），5 次抛 `XhsBlockedError`。
 
+### Added（续）
+
+- `xhs verify [--quick]`：运行时自检，覆盖签名连通、5 个 sort 枚举、`type`/`time`/`scope`/`location` 筛选、
+  组合筛选、feed/comments/sub_comments/user/user_posted、错误处理。改版后据此定位坏点。
+- 搜索筛选全部实测通过（此前 `--scope` / `--location` 标注为未验证）。
+
 ### Known limitations
 
 - 未模拟页面加载前置序列（`config` → `user/me` → …），属弱信号，见 risk-control §2 R3

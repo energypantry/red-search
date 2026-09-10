@@ -15,6 +15,7 @@ USAGE = """xhs-scraper 命令：
   usernotes <user_id> [N]        作者已发布笔记
   collect <子命令> ...           批量采集（suggest/search/enrich/comments/authors/run）
   stats <notes.jsonl|目录>       量化统计（均赞/中位/最高/近90天占比/Top5）
+  verify [--quick]              运行时自检：签名/端点/筛选是否仍可用（会发真实请求）
 
 环境变量：XHS_FP_MODE=auto|real|synthetic，XHS_COOKIE_FILE，XHS_STATE_DIR
 """
@@ -34,6 +35,10 @@ def main(argv=None):
         from . import client
         sys.argv = ["xhs", cmd] + rest
         return client.main()
+
+    if cmd == "verify":
+        from . import verify
+        return verify.main(rest)
 
     if cmd == "stats":
         from . import stats

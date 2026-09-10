@@ -32,6 +32,16 @@ c.search(keyword, page=1, page_size=20, sort="general")
 | `filter_note_type` | `视频笔记` / `普通笔记` |
 | `filter_note_range` | `已看过` / `未看过` / `已关注` |
 | `filter_pos_distance` | `同城` / `附近` |
+
+**筛选生效性已验证**（2026-09-10，见 `xhs verify`）：
+
+| 维度 | 验证方式 | 结果 |
+|---|---|---|
+| `sort` | 5 个枚举两两比对结果集 | 与 `general` 重叠 0–19%，全部不同 ✅ |
+| `filter_note_type` | **客观断言**：`video` 档返回的 `note_card.type` 全为 `video`，`image` 档全为 `normal` | ✅ |
+| `filter_note_time` | **客观抽查发布时间**：`day` 全部 ≤0.98 天、`week` 全部 ≤5.45 天（且有 >1 天样本）、`half_year` 全部 ≤168 天（且有 >7 天样本） | ✅ |
+| `filter_note_range` | 与「不限」比对重叠率 | `seen` 0% / `unseen` 90% / `followed` 0% ✅ |
+| `filter_pos_distance` | 与「不限」比对重叠率 | `city` 29% / `nearby` 29% ✅ |
 | `filter_hot` | 各城市热搜词（服务端动态下发） |
 
 便捷构造：`build_filters(time="week", note_type="image", scope="unseen", location="city")`

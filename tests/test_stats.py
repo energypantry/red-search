@@ -44,3 +44,26 @@ def test_compute_empty(tmp_path):
     res = compute(path)
     assert res["total"] == 1
     assert "with_likes" in res and res["with_likes"] == 0
+
+
+# ---------- verify 模块（离线部分）----------
+
+def test_verifier_report_exit_codes():
+    """自检的退出码语义：全通过 0，有失败 1。"""
+    from xhs_scraper.verify import Verifier
+    v = Verifier.__new__(Verifier)          # 不走 __init__（会建网络客户端）
+    v.passed, v.failed = ["a", "b"], []
+
+    class _C:
+        request_count, error_count = 3, 0
+    v.c = _C()
+    assert v.report() == 0
+    v.failed = ["x"]
+    assert v.report() == 1
+
+
+def test_verifier_overlap():
+    from xhs_scraper.verify import Verifier
+    assert Verifier.overlap([], []) == 0.0
+    assert Verifier.overlap(["a", "b"], ["a", "b"]) == 1.0
+    assert Verifier.overlap(["a", "b"], ["a", "c"]) == 0.5
