@@ -9,7 +9,9 @@
 
 ### Added
 
-- `XhsClient`：纯算签名客户端（基于 `xhshow`），覆盖 search / feed / comments / sub_comments / user / user_posted
+- `XhsClient`：纯算签名客户端（基于 `xhshow`），覆盖 suggest / search / feed / comments / sub_comments / user / user_posted
+- 搜索联想词（`GET /api/sns/web/v1/search/recommend`）也已纯算覆盖 → 关键词调研全流程（联想词 → 搜索 → 验证）
+  不再需要浏览器路线
 - 批量采集器 `xhs_scraper.collect`：`search` / `enrich` / `comments` / `authors` / `run` 四段流水线，
   JSONL 追加安全 + 断点续采
 - 统一 CLI `bin/xhs`（自动建 venv、转发子命令、`doctor` 自检）

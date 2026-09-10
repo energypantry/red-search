@@ -26,6 +26,17 @@ c.search(keyword, page=1, page_size=20, sort="general")
 返回：`data.items[]`，每项含 `id`(note_id)、**`xsec_token`（item 级，46 字符）**、`note_card`。
 搜索结果里混有直播/AI 占位条目，需过滤（`note_id` 必须是 24 位 hex 且 `note_card` 非空）。
 
+### `GET /api/sns/web/v1/search/recommend` — 搜索联想词
+
+```python
+c.suggestions("咖啡")     # -> ["咖啡推荐", "咖啡店", ...]
+```
+
+参数：`keyword`（必填）、`source`（可选，如 `web_search_result_notes`）。
+返回：`data.sug_items[].text` 为建议词；`data.search_cpl_id` / `data.word_request_id` 为会话标识。
+
+> 注意成功码是 `code=1000`（不是 0），但 `success=true`。
+
 ### `POST /api/sns/web/v1/feed` — 笔记详情
 
 ```python
@@ -192,7 +203,6 @@ c.comments(note_id, xsec_token, cursor="")
 
 | 端点 | 说明 |
 |---|---|
-| `GET /api/sns/web/v1/search/recommend` | 搜索联想词 |
 | `GET /api/sns/web/v1/search/filter` | 搜索筛选项 |
 | `POST /api/sns/web/v1/search/usersearch` | 用户搜索 |
 | `POST /api/sns/web/v1/homefeed` | 首页推荐流 |

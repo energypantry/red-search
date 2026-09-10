@@ -22,6 +22,14 @@ node deps : 已安装
 ## 1. 单次查询
 
 ```bash
+$ xhs suggest "咖啡"
+{
+  "keyword": "咖啡",
+  "count": 10,
+  "suggestions": ["咖啡推荐", "咖啡店", "咖啡冻干", "咖啡豆", "咖啡自制",
+                  "咖啡文案", "咖啡的好处与坏处", "咖啡师", "咖啡渍怎么洗", "咖啡搭配什么好喝自制"]
+}
+
 $ xhs search "咖啡" 20
 success=True items=22
   69fcbbd00000000023006dc5  tok=AB9kB-1OC-bZWBOJ…  青岛 咖啡搭子☕ 一个月50k  likes=58

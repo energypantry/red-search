@@ -341,6 +341,40 @@ def do_authors(c, out_dir, limit=None, with_notes=False, max_author_notes=1,
     return done
 
 
+# ---------------- 联想词段 ----------------
+def do_suggest(c, keywords, out_dir, quiet=False):
+    """搜搜索联想词（下拉推荐）= 用户长期在搜的真实词。写 suggestions.jsonl。"""
+    path = os.path.join(out_dir, "suggestions.jsonl")
+    have = {(r.get("keyword"), r.get("text")) for r in read_jsonl(path)}
+    added = 0
+    for kw in keywords:
+        try:
+            d = (c.suggest(kw).json().get("data") or {})
+        except XhsBlockedError as e:
+            log(f"熔断，停止联想词段：{e}", quiet)
+            break
+        except Exception as e:
+            log(f"  联想词失败 '{kw}': {type(e).__name__}", quiet)
+            continue
+        items = d.get("sug_items") or []
+        for it in items:
+            text = it.get("text")
+            if not text or (kw, text) in have:
+                continue
+            append_jsonl(path, {
+                "keyword": kw,
+                "text": text,
+                "type": it.get("type"),
+                "search_type": it.get("search_type"),
+                "collected_at": now(),
+            })
+            have.add((kw, text))
+            added += 1
+        log(f"suggest '{kw}': +{len(items)} 条（累计新增 {added}）", quiet)
+    log(f"联想词段完成，新增 {added} 条 -> {path}", quiet)
+    return added
+
+
 # ---------------- notes.jsonl 就地更新 ----------------
 def _rewrite(path, todo_ids, new):
     """把 todo_ids 中指定 note_id 的记录替换为 new（其余原样保留）。"""
@@ -418,6 +452,10 @@ def build_parser():
     sp.add_argument("--with-notes", action="store_true", help="同时抓作者已发布笔记")
     sp.add_argument("--max-author-notes", type=int, default=1, help="每个作者翻几页笔记（默认 1）")
 
+    sp = sub.add_parser("suggest", help="采集搜索联想词，写 suggestions.jsonl")
+    common(sp)
+    sp.add_argument("--keyword", action="append", required=True)
+
     sp = sub.add_parser("run", help="全链路：search → enrich → comments")
     common(sp)
     sp.add_argument("--keyword", action="append", required=True)
@@ -456,6 +494,8 @@ def main(argv=None):
             do_authors(c, args.out, limit=args.limit, with_notes=args.with_notes,
                        max_author_notes=args.max_author_notes, quiet=args.quiet,
                        min_likes=args.min_likes)
+        elif args.cmd == "suggest":
+            do_suggest(c, args.keyword, args.out, args.quiet)
         elif args.cmd == "run":
             do_search(c, args.keyword, args.pages, args.page_size, args.sort, args.out, args.quiet)
             do_enrich(c, args.out, limit=args.max_notes, quiet=args.quiet, min_likes=args.min_likes)

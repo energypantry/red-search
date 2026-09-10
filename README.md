@@ -12,6 +12,7 @@
 
 | 能力 | 命令 | 产物 |
 |---|---|---|
+| 搜索联想词（下拉推荐） | `xhs suggest` / `xhs collect suggest` | `suggestions.jsonl` |
 | 关键词搜索 | `xhs search` / `xhs collect search` | `notes.jsonl` |
 | 笔记详情（正文/图片/标签/互动数） | `xhs feed` / `xhs collect enrich` | 回写 `notes.jsonl` |
 | 一/二级评论 | `xhs comments` / `xhs collect comments` | `comments.jsonl` |
@@ -46,6 +47,7 @@ xhs cookies            # 从已登录浏览器取出会话 cookies
 xhs fp                 # 抓真机设备指纹并 pin（强烈建议）
 
 # 2) 查询
+xhs suggest "咖啡"      # 联想词
 xhs search "咖啡" 20
 xhs user <user_id>
 xhs usernotes <user_id> 30

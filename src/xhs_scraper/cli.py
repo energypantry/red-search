@@ -8,6 +8,7 @@ import sys
 USAGE = """xhs-scraper 命令：
 
   search <关键词> [N]            搜索笔记
+  suggest <关键词>              搜索联想词（下拉推荐）
   feed <note_id> <xsec_token>    笔记详情
   comments <note_id> <xsec_token>  评论
   user <user_id>                 作者主页
@@ -17,7 +18,7 @@ USAGE = """xhs-scraper 命令：
 环境变量：XHS_FP_MODE=auto|real|synthetic，XHS_COOKIE_FILE，XHS_STATE_DIR
 """
 
-API_CMDS = {"search", "feed", "comments", "user", "usernotes"}
+API_CMDS = {"search", "suggest", "feed", "comments", "user", "usernotes"}
 
 
 def main(argv=None):

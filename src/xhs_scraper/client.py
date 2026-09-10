@@ -21,6 +21,7 @@ xhs_scraper.client — 小红书 Web API 客户端（纯算签名，风险缓解
 
 CLI（推荐用 bin/xhs，见项目 README）:
     python3 -m xhs_scraper.cli search "咖啡" 20
+    python3 -m xhs_scraper.cli suggest "咖啡"           # 搜索联想词
     python3 -m xhs_scraper.cli feed <note_id> <xsec_token>
     python3 -m xhs_scraper.cli comments <note_id> <xsec_token>
     python3 -m xhs_scraper.cli user <user_id>
@@ -270,6 +271,19 @@ class XhsClient:
         self._after(r)
         return r
 
+    # ---------- 搜索联想词 ----------
+    def suggest(self, keyword):
+        """搜索下拉联想词。原始响应中 `data.sug_items[].text` 为建议词。"""
+        return self.get("/api/sns/web/v1/search/recommend", {"keyword": keyword})
+
+    def suggestions(self, keyword):
+        """便捷方法：直接返回建议词字符串列表（失败返回空列表）。"""
+        try:
+            d = (self.suggest(keyword).json().get("data") or {})
+        except Exception:
+            return []
+        return [it.get("text") for it in (d.get("sug_items") or []) if it.get("text")]
+
     # ---------- 用户 / 作者主页 ----------
     def user(self, user_id):
         """他人主页 basic_info + interactions（关注/粉丝/获赞）。参数名必须是 target_user_id。"""
@@ -389,6 +403,11 @@ def main():
     elif cmd == "comments":
         print(json.dumps(c.comments(sys.argv[2], sys.argv[3]).json(),
                          ensure_ascii=False, indent=2)[:3000])
+    elif cmd == "suggest":
+        kw = sys.argv[2] if len(sys.argv) > 2 else "咖啡"
+        words = c.suggestions(kw)
+        print(json.dumps({"keyword": kw, "count": len(words), "suggestions": words},
+                         ensure_ascii=False, indent=2))
     elif cmd == "user":
         d = (c.user(sys.argv[2]).json().get("data") or {})
         bi = d.get("basic_info") or {}
