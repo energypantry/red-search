@@ -14,6 +14,7 @@
 |---|---|---|
 | 搜索联想词（下拉推荐） | `xhs suggest` / `xhs collect suggest` | `suggestions.jsonl` |
 | 关键词搜索 | `xhs search` / `xhs collect search` | `notes.jsonl` |
+| 量化统计（均赞/中位/最高/近90天占比/Top5） | `xhs stats <out目录>` | 终端输出 |
 | 笔记详情（正文/图片/标签/互动数） | `xhs feed` / `xhs collect enrich` | 回写 `notes.jsonl` |
 | 一/二级评论 | `xhs comments` / `xhs collect comments` | `comments.jsonl` |
 | 作者主页（简介/小红书号/粉丝/获赞/标签/IP属地） | `xhs user` | — |
@@ -117,6 +118,18 @@ xhs-scraper/
 - [API 参考](docs/api-reference.md) — 端点、参数契约、返回结构
 - [排障](docs/troubleshooting.md) — 踩过的坑与正解
 - [原始侦察记录](docs/recon-2026-09-10.md) — 2026-09-10 逆向证据
+
+## 与浏览器路线的关系
+
+本工具是**默认路线**。另有基于 Agent Browser Runtime 驱动已登录 Chrome 的浏览器路线
+（`~/.openclaw-vovo/workspace/tools/xiaohongshu/xhs.sh`），**仅作备用**，只在以下情况启用：
+
+1. 本工具返回 **406 / 网关错误**（签名失效，等 `xhshow` 跟进发版）
+2. 需要本工具**未覆盖**的能力：搜索高级筛选面板（发布时间/笔记类型/已看过/同城）、页面级截图或 HTML
+3. 需要**真人级行为信号**的场景（高风险账号/养号）
+4. cookies 失效且无法重新取，但浏览器已登录
+
+> 浏览器路线与本项目共享同一套 cookies（在同一个浏览器 profile 里）。回退是**例外**，不是默认。
 
 ## 已知边界
 

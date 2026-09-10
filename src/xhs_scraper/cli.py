@@ -13,7 +13,8 @@ USAGE = """xhs-scraper 命令：
   comments <note_id> <xsec_token>  评论
   user <user_id>                 作者主页
   usernotes <user_id> [N]        作者已发布笔记
-  collect <子命令> ...           批量采集（search/enrich/comments/authors/run）
+  collect <子命令> ...           批量采集（suggest/search/enrich/comments/authors/run）
+  stats <notes.jsonl|目录>       量化统计（均赞/中位/最高/近90天占比/Top5）
 
 环境变量：XHS_FP_MODE=auto|real|synthetic，XHS_COOKIE_FILE，XHS_STATE_DIR
 """
@@ -33,6 +34,10 @@ def main(argv=None):
         from . import client
         sys.argv = ["xhs", cmd] + rest
         return client.main()
+
+    if cmd == "stats":
+        from . import stats
+        return stats.main(rest)
 
     if cmd == "collect":
         from . import collect
