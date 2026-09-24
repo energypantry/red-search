@@ -12,8 +12,8 @@
   组合筛选、feed / comments / sub_comments / user / user_posted、错误处理。
   `--quick` 约 22 次请求，全量约 46 次；退出码 0/1 可用于 CI。
 - **`xhs filters <关键词>`** / `client.filter_options()` — 拉取服务端**动态下发**的筛选面板定义
-  （6 组：排序依据 / 笔记类型 / 发布时间 / 搜索范围 / 位置距离 / 热门词），
-  小红书改版后不必再逆向就能看到有哪些筛选。
+  （6 组：排序依据 / 内容类型 / 发布时间 / 搜索范围 / 位置距离 / 热门词），
+  平台改版后不必再自行分析就能看到有哪些筛选。
 - **`xhs stats <notes.jsonl|目录>`** — 量化统计（均赞 / 中位 / 最高 / 近 90 天占比 / Top5）。
 - 搜索筛选支持（`--time` / `--type` / `--scope` / `--location` / `--hot`），
   含时间窗分层方法论（全部档会被老爆款拉高，一周档才反映新帖真实水位）。
@@ -57,14 +57,13 @@
 - `XhsClient`：纯算签名客户端（基于 `xhshow`），覆盖 suggest / search / feed / comments / sub_comments / user / user_posted
 - 搜索联想词（`GET /api/sns/web/v1/search/recommend`）也已纯算覆盖 → 关键词调研全流程（联想词 → 搜索 → 验证）
   不再需要浏览器路线
-- 批量采集器 `xhs_scraper.collect`：`search` / `enrich` / `comments` / `authors` / `run` 四段流水线，
+- 批量检索器 `xhs_scraper.collect`：`search` / `enrich` / `comments` / `authors` / `run` 四段流水线，
   JSONL 追加安全 + 断点续采
 - 统一 CLI `bin/xhs`（自动建 venv、转发子命令、`doctor` 自检）
 - `tools/get_xhs_cookies.js`：从 Agent Browser Runtime 的已登录 Chrome 经 CDP 提取 cookies
 - `tools/capture_fingerprint.js`：抓取真机设备指纹（`x8`/`x9`/`ua`）并落盘 pin
-- 文档：`docs/architecture.md`（签名链逆向）、`docs/risk-control.md`（封控概率判断）、
-  `docs/api-reference.md`（98 端点 + 参数契约）、`docs/troubleshooting.md`、
-  `docs/recon-2026-09-10.md`（原始侦察证据）
+- 文档：`docs/architecture.md`（请求链路与签名结构）、`docs/risk-control.md`（访问频次风险判断）、
+  `docs/api-reference.md`（端点与参数契约）、`docs/troubleshooting.md`
 - 离线测试 `tests/`
 
 ### Security / Risk

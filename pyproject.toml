@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xhs-scraper"
+name = "red-search"
 version = "0.1.1"
-description = "小红书 Web API 采集工具（纯算签名，无需浏览器在线）"
+description = "一个可以快速在社交媒体搜索信息的工具"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }

@@ -5,7 +5,7 @@
 """
 import sys
 
-USAGE = """xhs-scraper 命令：
+USAGE = """red-search 命令：
 
   search <关键词> [N] [选项]      搜索笔记（N=条数，默认20；筛选见 xhs search --help）
   suggest <关键词>              搜索联想词（下拉推荐）

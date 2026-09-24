@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# xhs — xhs-scraper 统一入口
+# xhs — red-search 统一入口
 #
 # 首次调用会自动建 venv 并安装依赖（xhshow + requests）。
 # 也可手动:  python3 -m venv ~/.local/share/xhs-venv && ~/.local/share/xhs-venv/bin/pip install -e .

@@ -7,7 +7,7 @@
 
 ### `GET /api/sns/web/v1/search/notes` — ⚠️ 实为 POST
 
-搜索笔记。**必须用 v1**（`v2` 在同主机返回 404）。
+搜索内容。**必须用 v1**（`v2` 在同主机返回 404）。
 
 ```python
 c.search(keyword, page=1, page_size=20, sort="general")
@@ -46,7 +46,7 @@ c.search(keyword, page=1, page_size=20, sort="general")
 
 便捷构造：`build_filters(time="week", note_type="image", scope="unseen", location="city")`
 
-> **实测差异**（关键词"咖啡"各采 2 页）：全部档均赞 7123 ｜ 半年档 4129 ｜ **一周档 517.6（中位 243）** ｜ 最新排序均赞 3.0。
+> **实测差异**（关键词"咖啡"各取 2 页）：全部档均赞 7123 ｜ 半年档 4129 ｜ **一周档 517.6（中位 243）** ｜ 最新排序均赞 3.0。
 > 这正是"必须按时间窗分档测"的原因——全部档的数字由历史爆款撑起，新帖拿不到。
 
 返回：`data.items[]`，每项含 `id`(note_id)、**`xsec_token`（item 级，46 字符）**、`note_card`。
@@ -63,7 +63,7 @@ c.suggestions("咖啡")     # -> ["咖啡推荐", "咖啡店", ...]
 
 > 注意成功码是 `code=1000`（不是 0），但 `success=true`。
 
-### `POST /api/sns/web/v1/feed` — 笔记详情
+### `POST /api/sns/web/v1/feed` — 内容详情
 
 ```python
 c.feed(note_id, xsec_token, xsec_source="pc_search")
@@ -104,12 +104,12 @@ c.comments(note_id, xsec_token, cursor="")
 
 返回 `data`：
 
-- `basic_info`：`nickname` / `red_id`(小红书号) / `gender` / `ip_location` / `desc`(简介) / `images`(头像)
+- `basic_info`：`nickname` / `red_id`(平台号) / `gender` / `ip_location` / `desc`(简介) / `images`(头像)
 - `interactions[]`：`{type: follows|fans|interaction, count}` — **count 是字符串**
 - `tags[]`：星座/职业标签
 - `tab_public` / `extra_info` / `result`
 
-### `GET /api/sns/web/v1/user_posted` — 用户已发布笔记
+### `GET /api/sns/web/v1/user_posted` — 用户已发布内容
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
@@ -173,7 +173,7 @@ c.comments(note_id, xsec_token, cursor="")
 | `POST` | `/api/sns/web/report/list` | web获取举报项 |
 | `POST` | `/api/sns/web/report/submit` | web提交举报 |
 | `POST` | `/api/sns/web/v1/board` | web创建专辑 |
-| `GET` | `/api/sns/web/v1/board/note` | web专辑笔记列表 |
+| `GET` | `/api/sns/web/v1/board/note` | web专辑内容列表 |
 | `GET` | `/api/sns/web/v1/board/user` | web查询用户的专辑 |
 | `GET` | `/api/sns/web/v1/board/{boardId}` | web获取专辑信息 |
 | `POST` | `/api/sns/web/v1/comment/delete` | web-删除评论 |
@@ -196,13 +196,13 @@ c.comments(note_id, xsec_token, cursor="")
 | `GET` | `/api/sns/web/v1/login/qrcode/status` | web登录-获取二维码状态 |
 | `GET` | `/api/sns/web/v1/login/send_code` | web登录-发送验证码 |
 | `POST` | `/api/sns/web/v1/login/social` | web端三方登录 |
-| `POST` | `/api/sns/web/v1/note/collect` | web笔记收藏 |
-| `POST` | `/api/sns/web/v1/note/dislike` | WEB-笔记取消点赞 |
-| `POST` | `/api/sns/web/v1/note/like` | WEB-笔记点赞 |
+| `POST` | `/api/sns/web/v1/note/collect` | web内容收藏 |
+| `POST` | `/api/sns/web/v1/note/dislike` | WEB-内容取消点赞 |
+| `POST` | `/api/sns/web/v1/note/like` | WEB-内容点赞 |
 | `GET` | `/api/sns/web/v1/note/like/page` | web-个人页点赞列表 |
-| `POST` | `/api/sns/web/v1/note/metrics_report` | 笔记详情页进入和退出时调取的指标上报接口-web |
-| `POST` | `/api/sns/web/v1/note/move` | web专辑间移动笔记 |
-| `POST` | `/api/sns/web/v1/note/uncollect` | web笔记取消收藏 |
+| `POST` | `/api/sns/web/v1/note/metrics_report` | 内容详情页进入和退出时调取的指标上报接口-web |
+| `POST` | `/api/sns/web/v1/note/move` | web专辑间移动内容 |
+| `POST` | `/api/sns/web/v1/note/uncollect` | web内容取消收藏 |
 | `POST` | `/api/sns/web/v1/nps` | 【web】-NPS |
 | `GET` | `/api/sns/web/v1/resource_load` | [web]活动资源位预加载 |
 | `GET` | `/api/sns/web/v1/search/filter` | web搜索-筛选项 |
@@ -234,7 +234,7 @@ c.filter_options("咖啡")
 ```
 
 参数：`keyword` + `search_id`（缺 `search_id` 会返回 400）。
-用它可以在小红书改版后**直接看到当前有哪些筛选**，不必再逆向。
+用它可以在平台改版后**直接看到当前有哪些筛选**，不必再自行分析。
 
 CLI：`xhs filters "咖啡"`
 
@@ -243,7 +243,7 @@ CLI：`xhs filters "咖啡"`
 | group id | 名称 | 取值 |
 |---|---|---|
 | `sort_type` | 排序依据 | `general` 综合 / `time_descending` 最新 / `popularity_descending` 最多点赞 / `comment_descending` 最多评论 / `collect_descending` 最多收藏 |
-| `filter_note_type` | 笔记类型 | 不限 / 视频笔记 / 普通笔记 |
+| `filter_note_type` | 内容类型 | 不限 / 视频笔记 / 普通笔记 |
 | `filter_note_time` | 发布时间 | 不限 / 一天内 / 一周内 / 半年内 |
 | `filter_note_range` | 搜索范围 | 不限 / 已看过 / 未看过 / 已关注 |
 | `filter_pos_distance` | 位置距离 | 不限 / 同城 / 附近 |
@@ -274,11 +274,10 @@ CLI：`xhs filters "咖啡"`
 | `POST /api/sns/web/v1/homefeed` | 首页推荐流 |
 | `GET /api/sns/web/v1/note/like/page` | 个人页点赞列表 |
 | `GET /api/sns/web/v2/note/collect/page` | 个人页收藏列表 |
-| `GET /api/sns/web/v1/board/{boardId}` | 专辑信息 / 专辑笔记 |
+| `GET /api/sns/web/v1/board/{boardId}` | 专辑信息 / 专辑内容 |
 | `GET /api/sns/web/v1/user/hover_card` | 用户悬浮卡片 |
 
 ## 相关文档
 
-- [架构与签名原理](architecture.md)
+- [架构与请求链路](architecture.md)
 - [排障](troubleshooting.md)
-- [原始侦察记录](recon-2026-09-10.md)

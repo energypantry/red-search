@@ -6,13 +6,13 @@
 ln -sf "$PWD/bin/xhs" ~/.local/bin/xhs
 xhs doctor          # 首次会自动建 venv 装依赖
 xhs cookies         # 从已登录浏览器取会话 cookies
-xhs fp              # 抓真机设备指纹并 pin  ← 决定封控概率，别跳过
+xhs fp              # 抓真机设备标识并 pin  ← 决定访问风险，别跳过
 ```
 
 `xhs doctor` 期望输出（关键行）：
 
 ```
-project   : /Users/zhi/Desktop/Projects/xhs-scraper
+project   : /Users/zhi/Desktop/Projects/red-search
 指纹模式  : real | Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) …
             （真机指纹已 pin；切合成: XHS_FP_MODE=synthetic xhs ...）
 cookies   : 已就绪 (~/.local/share/xhs/cookies.json)
@@ -93,10 +93,10 @@ $ xhs collect run \
 
 | 文件 | 内容 |
 |---|---|
-| `notes.jsonl` | 笔记：`note_id` / `xsec_token` / `title` / `desc` / `tags` / `images` / 互动数 / `keyword` |
+| `notes.jsonl` | 内容：`note_id` / `xsec_token` / `title` / `desc` / `tags` / `images` / 互动数 / `keyword` |
 | `comments.jsonl` | 评论：`comment_id` / `note_id` / `parent_id`（二级评论有值）/ `content` / `like_count` |
 | `users.jsonl` | 作者：`nickname` / `red_id` / `follows` / `fans` / `interaction` / `ip_location` / `desc` / `tags` / `sources` |
-| `user_notes.jsonl` | 作者已发布笔记（`--author-notes` 时） |
+| `user_notes.jsonl` | 作者已发布内容（`--author-notes` 时） |
 
 **断点续采**：重跑同一条命令即可，已采过的 id 自动跳过。
 

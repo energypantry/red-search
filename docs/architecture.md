@@ -1,8 +1,8 @@
-# 架构与签名原理
+# 架构与请求链路
 
 ## 1. 目标侧的签名门
 
-小红书 Web（`edith.xiaohongshu.com`）每个 API 请求必须携带：
+Web 端接口每个 API 请求必须携带：
 
 ```
 X-s          XYS_<customBase64(JSON{ x0..x7 })>     # 请求签名
@@ -14,9 +14,9 @@ X-t          毫秒时间戳
 
 缺签名时：POST 返回 `406 {"code":-1,"success":false}`；GET 返回 `500 create invoker failed`。
 
-## 2. 签名算法（源码级确证）
+## 2. 签名算法结构
 
-源码位置：`fe-static.xhscdn.com/formula-static/xhs-pc-web/public/resource/js/vendor-dynamic.0d98fa0a.js`，
+平台前端 bundle 中的实现位置：`vendor-dynamic.<hash>.js`，
 webpack module `384`（md5 / custom-base64 / crc32）+ module `4455`（`signV2Init`，注入 `window.mnsv2`）。
 
 ```text
@@ -42,7 +42,7 @@ X-S-Common = customB64(utf8(JSON.stringify(
 customB64 字母表 = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
 ```
 
-> **实现差异（实测）**：真机抓包的 `X-s` payload 是 `x0..x7`（含 `x5`=md5、`x6/x7`=encSsk）；
+> **实现差异（实测）**：真实浏览器请求的 `X-s` payload 是 `x0..x7`（含 `x5`=md5、`x6/x7`=encSsk）；
 > `xhshow` 的纯算实现只发 `x0..x4`，服务端一样返回 200。可见 `x5/x6/x7` 至少在 Web 端不是硬校验项。
 > 本项目的测试按实际实现断言。
 
@@ -50,20 +50,18 @@ customB64 字母表 = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97h
 
 | 断言 | 证据 |
 |---|---|
-| `x5 = MD5(path[+body])` | 用 12/21 条真实抓包逐一反算命中 |
-| App 自身调用 `window.mnsv2(content, x5, MD5(path))` | 钩住 `window.mnsv2` 重载页面，逐字捕获 23 次调用 |
+| `x5 = MD5(path[+body])` | 用 12/21 条真实流量样本逐一反算命中 |
+| 页面自身调用 `window.mnsv2(content, x5, MD5(path))` | 重载页面记录 `window.mnsv2` 的 23 次调用，逐字比对 |
 | `window.mnsv2` / `window._webmsxyw` 全局可调 | 页面内求值确认 |
 
-原始证据：抓包脚本与输出见 [recon-2026-09-10.md](recon-2026-09-10.md)。
-
-### 为什么不能手搓（直接复用 xhshow，不要自己拼）
+### 为什么不自己拼（直接复用 xhshow）
 
 1. `x6/x7`（encSsk）依赖浏览器 `localStorage` 的 ssk map + SHA1 nonce，**无法离线重建**
 2. `X-S-Common` 的 `x8` 是 2KB+ 设备指纹 blob（含 GPU/Canvas/WebGL/字体/屏幕等），且与 `a1` 绑定
 3. 手动调 `mnsv2` 得到 `mns0301_*`，而 App 自身调用是 `mns0101_*`（同函数、同参数、同页面，内部分支未对齐）
 4. 自算 `X-s` 长度 ~408，真实 556~564——缺的正是 `x6/x7`
 
-## 3. 本方案怎么绕过去
+## 3. 本方案怎么处理
 
 用 [`xhshow`](https://github.com/Cloxl/xhshow)（PyPI v0.2.0，MIT）——它把整套算法**完整重实现为纯计算**：
 
@@ -103,7 +101,7 @@ bin/xhs ──> python -m xhs_scraper.cli
               │                                 /api/sns/web/v2/comment/sub/page GET
               │                                 /api/sns/web/v1/user/otherinfo  GET
               │                                 /api/sns/web/v1/user_posted     GET
-              └── collect  四段流水线，JSONL 追加安全 + 断点续采
+              └── collect  四段流水线，JSONL 追加安全 + 断点续跑
 ```
 
 ## 6. 身份/状态存储
@@ -119,7 +117,6 @@ venv 默认在 `~/.local/share/xhs-venv`（`XHS_VENV` 可覆盖）。
 
 ## 相关文档
 
-- [风控与封控概率](risk-control.md)
+- [访问频次与风险](risk-control.md)
 - [API 参考](api-reference.md)
 - [排障](troubleshooting.md)
-- [原始侦察记录](recon-2026-09-10.md)

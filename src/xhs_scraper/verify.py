@@ -200,10 +200,10 @@ class Verifier:
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="xhs-scraper 运行时自检（会发起真实请求）")
+    p = argparse.ArgumentParser(description="red-search 运行时自检（会发起真实请求）")
     p.add_argument("--quick", action="store_true", help="精简模式（跳过时间窗抽查）")
     args = p.parse_args(argv)
-    print("xhs-scraper 运行时自检\n" + "=" * 60)
+    print("red-search 运行时自检\n" + "=" * 60)
     return Verifier(quick=args.quick).run()
 
 

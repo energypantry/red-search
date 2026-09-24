@@ -1,8 +1,8 @@
 {
-  "name": "xhs-scraper-tools",
+  "name": "red-search-tools",
   "version": "0.1.0",
   "private": true,
-  "description": "Node side-tools for xhs-scraper (cookie extraction, device fingerprint capture)",
+  "description": "Node side-tools for red-search (cookie extraction, device identity capture)",
   "license": "UNLICENSED",
   "dependencies": {
     "ws": "^8.21.3"
